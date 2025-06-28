@@ -1,20 +1,23 @@
 #include "Teleop.hpp"
 
-#incluse <px4_ros2/components/node_with_mode.hpp>
+#include <px4_ros2/components/node_with_mode.hpp>
 
-static const std::string kModeName = "Teleop";
+static const std::string kModeName = "Teleoperation";
 static const bool kEnableDebug = true;
 
 Teleop::Teleop(rclcpp::Node& node)
     : px4_ros2::ModeBase(node, kModeName)
     , _node(node)
 
-    {}
+    {
+        _manual_control_input = std::make_shared<px4_ros2::ManualControlInput>(*this);
+        _rates_setpoint = std::make_shared<px4_ros2::RatesSetpointType>(*this);
+        _attitude_setpoint = std::make_shared<px4_ros2::AttitudeSetpointType>(*this);
+    }
 
 void Teleop::onActivate()
 {
     RCLCPP_INFO(_node.get_logger(), "Teleop mode activated");
-    switchToState(State::Home);
 }
 void Teleop::onDeactivate()
 {
@@ -22,47 +25,39 @@ void Teleop::onDeactivate()
 }
 void Teleop::updateSetpoint(float dt_s)
 {
-    // Update the setpoint based on the current state
-    switch (_state) {
-        case State::Home:
-            // Logic for Home state
-            break;
-        case State::Takeoff:
-            // Logic for Takeoff state
-            break;
-        case State::Teleoop:
-            // Logic for Teleoop state
-            break;
-        case State::Idle:
-            // Logic for Idle state
-            break;
-        case State::Land:
-            // Logic for Land state
-            break;
+    if (!_manual_control_input->isValid()) {
+        RCLCPP_WARN_THROTTLE(_node.get_logger(), *_node.get_clock(), 2000, "Manual control input not valid.");
+        return;
     }
-}
-std::string Teleop::stateName(State state)
-{
-    switch (state) {
-        case State::Home: return "Home";
-        case State::Takeoff: return "Takeoff";
-        case State::Teleoop: return "Teleoop";
-        case State::Idle: return "Idle";
-        case State::Land: return "Land";
-        default: return "Unknown";
+
+    const float roll = _manual_control_input->roll();
+    const float pitch = _manual_control_input->pitch();
+    const float yaw = _manual_control_input->yaw();
+    const float throttle = _manual_control_input->throttle();
+
+    const float threshold = 0.9f;
+    const bool want_rates = fabsf(roll) > threshold || fabsf(pitch) > threshold;
+
+    const float yaw_rate = px4_ros2::degToRad(yaw * 120.f);
+
+    const Eigen::Vector3f thrust_sp{0.f, 0.f, -throttle};
+
+    if (want_rates) {
+        const Eigen::Vector3f rates_sp{
+            px4_ros2::degToRad(roll * 500.f),
+            px4_ros2::degToRad(-pitch * 500.f),
+            yaw_rate
+        };
+        _rates_setpoint->update(rates_sp, thrust_sp);
+    } else {
+        _yaw += yaw_rate * dt_s;
+
+        const Eigen::Quaternionf qd = px4_ros2::eulerRpyToQuaternion(
+            px4_ros2::degToRad(roll * 55.f),
+            px4_ros2::degToRad(-pitch * 55.f),
+            _yaw
+        );
+        _attitude_setpoint->update(qd, thrust_sp, yaw_rate);
     }
-}
 
-void Teleop::switchToState(State state)
-{
-    _state = state;
-    RCLCPP_INFO(_node.get_logger(), "Switched to state: %s", stateName(state).c_str());
-}
-
-int main(int argc, char** argv)
-{
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<px4_ros2::NodeWithMode<Teleop>>(kNodeName, kEnableDebug));
-    rclcpp::shutdown();
-    return 0;
 }

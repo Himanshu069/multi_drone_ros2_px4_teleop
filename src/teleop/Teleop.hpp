@@ -1,20 +1,18 @@
 #pragma once
 
-// PX4 interface Library includes
+// PX4 Interface Library
 #include <px4_ros2/components/mode.hpp>
-#include <px4_ros2/odometry/local_position.hpp>
-#include <px4_msgs/msg/vehicle_land_detected.hpp>
-// TODO: Provide lookup information for the library includes
+#include <px4_ros2/components/manual_control_input.hpp>
+#include <px4_ros2/control/setpoint_types/experimental/rates.hpp>
+#include <px4_ros2/control/setpoint_types/experimental/attitude.hpp>
+#include <px4_ros2/utils/geometry.hpp>
 
-// ROS2 includes
+// ROS 2 Core
 #include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <cmath>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <geometry_msgs/msg/pose.hpp>
-#include <geometry_msgs/msg/quaternion.hpp>
-#include <vector>
+
+// C++ Std
+#include <cmath> // for M_PI
+#include <Eigen/Eigen>
 
 class Teleop : public px4_ros2::ModeBase
 {
@@ -27,18 +25,10 @@ class Teleop : public px4_ros2::ModeBase
         void updateSetpoint(float dt_s) override;
 
     private:
-
-        enum class State
-        {
-            Home,
-            Takeoff,
-            Teleoop,
-            Idle,
-            Land
-        };
-
-        void switchToState(State state);
-        std::string stateName(State state);
-        
+        std::shared_ptr<px4_ros2::ManualControlInput> _manual_control_input;
+        std::shared_ptr<px4_ros2::RatesSetpointType> _rates_setpoint;
+        std::shared_ptr<px4_ros2::AttitudeSetpointType> _attitude_setpoint;
+        rclcpp::Node & _node;
+        float _yaw{0.f};      
        
 };
