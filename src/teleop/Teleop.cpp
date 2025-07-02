@@ -8,56 +8,82 @@ static const bool kEnableDebug = true;
 Teleop::Teleop(rclcpp::Node& node)
     : px4_ros2::ModeBase(node, kModeName)
     , _node(node)
+{
+    _trajectory_setpoint = std::make_shared<px4_ros2::TrajectorySetpointType>(*this);
+    _vehicle_local_position = std::make_shared<px4_ros2::OdometryLocalPosition>(*this);
+    _vehicle_attitude = std::make_shared<px4_ros2::OdometryAttitude>(*this);
+    _clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
+    loadParameters();
+    _twist_sub = _node.create_subscription<geometry_msgs::msg::Twist>(
+        "/cmd_vel", 10,
+        [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
+            _last_twist = *msg;
+            _last_twist_time = _clock->now();
+        });
+}
 
-    {
-        _manual_control_input = std::make_shared<px4_ros2::ManualControlInput>(*this);
-        _rates_setpoint = std::make_shared<px4_ros2::RatesSetpointType>(*this);
-        _attitude_setpoint = std::make_shared<px4_ros2::AttitudeSetpointType>(*this);
+void Teleop::loadParameters()
+{
+    // Declare and get the parameter with a default value
+    _node.declare_parameter<double>("teleop_duration", 60.0);  
+    double duration_sec = _node.get_parameter("teleop_duration").as_double();
+    
+    RCLCPP_INFO(_node.get_logger(), "Teleoperation duration set to: %.2f seconds", duration_sec);
+    
+    // Ensure the value is sane
+    if (duration_sec < 5.0) {
+        RCLCPP_WARN(_node.get_logger(), "Invalid teleop_duration (%f), using default 60.0", duration_sec);
+        duration_sec = 60.0;
     }
+
+    _teleop_duration = std::chrono::duration<double>(duration_sec);
+}
 
 void Teleop::onActivate()
 {
+    _activation_time = _clock->now();
+    _last_twist_time = _activation_time;
     RCLCPP_INFO(_node.get_logger(), "Teleop mode activated");
 }
+
 void Teleop::onDeactivate()
 {
     RCLCPP_INFO(_node.get_logger(), "Teleop mode deactivated");
 }
-void Teleop::updateSetpoint(float dt_s)
+
+void Teleop::updateSetpoint([[maybe_unused]] float dt_s)
 {
-    if (!_manual_control_input->isValid()) {
-        RCLCPP_WARN_THROTTLE(_node.get_logger(), *_node.get_clock(), 2000, "Manual control input not valid.");
+    const auto now = _clock->now();
+
+    if (now - _last_twist_time > _teleop_duration) {
+        RCLCPP_WARN(_node.get_logger(), "No Twist commands for %.0f seconds, exiting Teleop mode.", _teleop_duration.count());
+        completed(px4_ros2::Result::Success);
         return;
     }
 
-    const float roll = _manual_control_input->roll();
-    const float pitch = _manual_control_input->pitch();
-    const float yaw = _manual_control_input->yaw();
-    const float throttle = _manual_control_input->throttle();
+    // Default values: zero velocity, no acceleration, no yaw input
+    Eigen::Vector3f velocity_ned{0.f, 0.f, 0.f};
+    std::optional<Eigen::Vector3f> acceleration = std::nullopt;
+    std::optional<float> yaw = std::nullopt;
+    std::optional<float> yaw_rate = std::nullopt;
 
-    const float threshold = 0.9f;
-    const bool want_rates = fabsf(roll) > threshold || fabsf(pitch) > threshold;
+    if ((now - _last_twist_time).seconds() <= 1.0) {
+        // Convert Twist (assumed ENU) to NED
+        // ENU: x=forward, y=left, z=up → NED: x=forward, y=right, z=down
+        const geometry_msgs::msg::Twist &twist = _last_twist;
+        float yaw = _vehicle_attitude->yaw(); // Get current yaw from attitude
+        // Convert to NED frame
+        Eigen::Vector3f velocity_body;
+        velocity_body.x() = twist.linear.x;
+        velocity_body.y() = twist.linear.y;
+        velocity_body.z() = twist.linear.z;
 
-    const float yaw_rate = px4_ros2::degToRad(yaw * 120.f);
+        velocity_ned.x() = velocity_body.x() * cos(yaw) - velocity_body.y() * sin(yaw);
+        velocity_ned.y() = velocity_body.x() * sin(yaw) + velocity_body.y() * cos(yaw);
+        velocity_ned.z() = -velocity_body.z();
 
-    const Eigen::Vector3f thrust_sp{0.f, 0.f, -throttle};
-
-    if (want_rates) {
-        const Eigen::Vector3f rates_sp{
-            px4_ros2::degToRad(roll * 500.f),
-            px4_ros2::degToRad(-pitch * 500.f),
-            yaw_rate
-        };
-        _rates_setpoint->update(rates_sp, thrust_sp);
-    } else {
-        _yaw += yaw_rate * dt_s;
-
-        const Eigen::Quaternionf qd = px4_ros2::eulerRpyToQuaternion(
-            px4_ros2::degToRad(roll * 55.f),
-            px4_ros2::degToRad(-pitch * 55.f),
-            _yaw
-        );
-        _attitude_setpoint->update(qd, thrust_sp, yaw_rate);
+        yaw_rate = -twist.angular.z; // ENU and NED both define yaw CCW from north
     }
 
+    _trajectory_setpoint->update(velocity_ned, acceleration, yaw, yaw_rate);
 }

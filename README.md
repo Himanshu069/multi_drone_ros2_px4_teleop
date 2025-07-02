@@ -35,5 +35,62 @@ source /opt/ros/humble/setup.bash
 OR
 Just add the line above to your bashrc, in that case it is going to be sourced every time you open a terminal.
 ```
-nano ~/.bashrc
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+source ~/.bashrc
 ```
+Navigate to the directory you would like to place the worskpace and then run the following
+
+```
+git clone git@github.com:ARK-Electronics/ros2_px4_teleop_example.git
+```
+Then navigate into the workspace:
+```
+cd ros2_px4_teleop_example/
+```
+
+Build the workspace
+```
+colcon build
+```
+After this runs, we do not need to build the whole workspace again, you can just build the individual packages you have modified
+
+```
+colcon build --packages-select teleop
+```
+Source the workspace
+```
+source install/setup.bash 
+```
+### Run the example
+
+#### Run the simulation environment
+Launch PX4 sim
+```
+make px4_sitl gz_x500_mono_cam_down_aruco
+```
+Start the Micro XRCE-DDS Agent:
+```
+MicroXRCEAgent udp4 -p 8888
+```
+
+Launch the Custom Mode Executor:
+```
+cd ros2_px4_teleop_example/
+source install/setup.bash
+ros2 run teleop teleop
+```
+
+Alternatively, you can use the launch file:
+```
+source install/setup.bash
+ros2 launch teleop teleop.launch.py
+```
+
+In a separate terminal, start the teleoperation keyboard:
+```
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+ARM the vehicle in QGroundControl, then select the Teleoperation mode.
+
+You should now be able to control the drone using the Teleop_Twist terminal. If there is no input for 60 seconds, the drone will automatically land. You can change this timeout by editing the value in the configuration file.
