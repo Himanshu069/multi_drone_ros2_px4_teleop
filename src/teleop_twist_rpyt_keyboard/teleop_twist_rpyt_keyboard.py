@@ -4,6 +4,7 @@ import rclpy
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Bool
 
 import sys, select, termios, tty
 
@@ -74,7 +75,11 @@ def main(args=None):
     depth=10
     )
     pub = node.create_publisher(Twist, 'cmd_vel', qos)
-
+    active_pub = node.create_publisher(Bool, '/teleop/active', qos)
+    # Publish active=True at start
+    active_msg = Bool()
+    active_msg.data = True
+    active_pub.publish(active_msg)
 
     speed = 0.5
     turn = 1.0
@@ -112,6 +117,10 @@ def main(args=None):
             twist.angular.y = 0.0
             twist.angular.z = yaw * turn
             pub.publish(twist)
+            # Publish active=True
+            active_msg = Bool()
+            active_msg.data = True
+            active_pub.publish(active_msg)
 
     except Exception as e:
         print(e)
@@ -119,4 +128,12 @@ def main(args=None):
     finally:
         twist = Twist()
         pub.publish(twist)
+
+        # Publish active=False
+        active_msg.data = False
+        active_pub.publish(active_msg)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
+        print("\nTeleop shutdown. Sent /teleop/active = False")
+
+if __name__ == '__main__':
+    main()

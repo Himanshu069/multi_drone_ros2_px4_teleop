@@ -16,7 +16,7 @@ public:
 private:
     // ROS2
     rclcpp::Node &_node;
-    
+
     // State management
     enum class State {
         Takeoff,           // Initial state, takeoff to a predefined altitude

@@ -18,7 +18,7 @@ You can find the required instructions collected below
 
 https://docs.px4.io/main/en/ros2/user_guide.html
 
-You need the lates PX4-Autopilot, that will contain the required drone with the downward facing camera and the world that has the aruco marker in it
+You need the lates PX4-Autopilot
 To get ros_gz bridge
 ```
 sudo apt install ros-humble-ros-gzgarden

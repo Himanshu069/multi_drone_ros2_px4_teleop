@@ -10,7 +10,6 @@ Teleop::Teleop(rclcpp::Node& node)
     , _node(node)
 {
     _trajectory_setpoint = std::make_shared<px4_ros2::TrajectorySetpointType>(*this);
-    _vehicle_local_position = std::make_shared<px4_ros2::OdometryLocalPosition>(*this);
     _vehicle_attitude = std::make_shared<px4_ros2::OdometryAttitude>(*this);
     _clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
     loadParameters();
@@ -20,8 +19,13 @@ Teleop::Teleop(rclcpp::Node& node)
             _last_twist = *msg;
             _last_twist_time = _clock->now();
         });
+    _active_sub = _node.create_subscription<std_msgs::msg::Bool>(
+        "/teleop/active", 10,
+        [this](const std_msgs::msg::Bool::SharedPtr msg) {
+          _teleop_active = msg->data;
+          RCLCPP_INFO(_node.get_logger(), "Teleop active: %s", _teleop_active ? "true" : "false");
+        });
 }
-
 void Teleop::loadParameters()
 {
     // Declare and get the parameter with a default value
@@ -41,8 +45,8 @@ void Teleop::loadParameters()
 
 void Teleop::onActivate()
 {
-    _activation_time = _clock->now();
-    _last_twist_time = _activation_time;
+    _last_twist_time = _clock->now();
+    _teleop_active = true;
     RCLCPP_INFO(_node.get_logger(), "Teleop mode activated");
 }
 
@@ -55,8 +59,8 @@ void Teleop::updateSetpoint([[maybe_unused]] float dt_s)
 {
     const auto now = _clock->now();
 
-    if (now - _last_twist_time > _teleop_duration) {
-        RCLCPP_WARN(_node.get_logger(), "No Twist commands for %.0f seconds, exiting Teleop mode.", _teleop_duration.count());
+    if (now - _last_twist_time > _teleop_duration||_teleop_active == false) {
+        RCLCPP_WARN(_node.get_logger(), "Teleop keyboard was closed or no Twist commands for %.0f seconds, exiting Teleop mode.", _teleop_duration.count());
         completed(px4_ros2::Result::Success);
         return;
     }
