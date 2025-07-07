@@ -88,7 +88,7 @@ ros2 launch teleop teleop.launch.py
 
 In a separate terminal, start the teleoperation keyboard:
 ```
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+ros2 run teleop_twist_rpyt_keyboard teleop_twist_rpyt_keyboard 
 ```
 
 ARM the vehicle in QGroundControl, then select the Teleoperation mode.

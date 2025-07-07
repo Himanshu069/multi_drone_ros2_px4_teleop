@@ -80,7 +80,7 @@ void Teleop::updateSetpoint([[maybe_unused]] float dt_s)
 
         velocity_ned.x() = velocity_body.x() * cos(yaw) - velocity_body.y() * sin(yaw);
         velocity_ned.y() = velocity_body.x() * sin(yaw) + velocity_body.y() * cos(yaw);
-        velocity_ned.z() = -velocity_body.z();
+        velocity_ned.z() = velocity_body.z();
 
         yaw_rate = -twist.angular.z; // ENU and NED both define yaw CCW from north
     }
