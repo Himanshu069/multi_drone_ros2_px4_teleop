@@ -71,7 +71,7 @@ void Teleop::updateSetpoint([[maybe_unused]] float dt_s)
     std::optional<float> yaw = std::nullopt;
     std::optional<float> yaw_rate = std::nullopt;
 
-    if ((now - _last_twist_time).seconds() <= 1.0) {
+    if ((now - _last_twist_time).seconds() <= 0.2) {
         // Convert Twist (assumed ENU) to NED
         // ENU: x=forward, y=left, z=up → NED: x=forward, y=right, z=down
         const geometry_msgs::msg::Twist &twist = _last_twist;
