@@ -66,7 +66,7 @@ source install/setup.bash
 #### Run the simulation environment
 Launch PX4 sim
 ```
-make px4_sitl gz_x500_mono_cam_down_aruco
+make px4_sitl gz_x500
 ```
 Start the Micro XRCE-DDS Agent:
 ```
