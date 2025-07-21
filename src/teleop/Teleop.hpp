@@ -40,7 +40,6 @@ private:
     // px4_ros2_cpp
     std::shared_ptr<px4_ros2::OdometryAttitude> _vehicle_attitude;
     std::shared_ptr<px4_ros2::TrajectorySetpointType> _trajectory_setpoint;
-    // Teleoperation duration
     std::chrono::duration<double> _teleop_duration;
     bool _teleop_active;
 };

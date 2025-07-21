@@ -28,7 +28,6 @@ Teleop::Teleop(rclcpp::Node& node)
 }
 void Teleop::loadParameters()
 {
-    // Declare and get the parameter with a default value
     _node.declare_parameter<double>("teleop_duration", 60.0);  
     double duration_sec = _node.get_parameter("teleop_duration").as_double();
     
