@@ -1,5 +1,5 @@
 # ROS2 & PX4 Teleop Example
-We previously had a popular [ros2_px4_offboard_example](https://github.com/ARK-Electronics/ROS2_PX4_Offboard_Example) based on Python and the offboard control mode. However, maintaining it became challenging. In this repository, we've migrated the code to C++ and implemented it using a custom PX4 flight mode for improved maintainability and performance.
+We previously had a popular [ros2_px4_offboard_example](https://github.com/ARK-Electronics/ROS2_PX4_Offboard_Example) based on Python and the offboard control mode. However, maintaining it became challenging. In this repository, we've migrated the code to C++ and implemented it using a Custom PX4 Flight Mode(PX4 ROS 2 Interface Library) for improved maintainability and performance.
 
 The original implementation was done with PX4 1.16
 
