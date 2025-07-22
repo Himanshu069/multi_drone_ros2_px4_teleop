@@ -98,6 +98,7 @@ ros2 launch teleop teleop.launch.py
 
 In a separate terminal, start the teleoperation keyboard:
 ```
+source install/setup.bash
 ros2 run teleop_twist_rpyt_keyboard teleop_twist_rpyt_keyboard 
 ```
 
