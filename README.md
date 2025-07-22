@@ -54,6 +54,10 @@ Build the submodules
 ```
 colcon build --packages-select px4_msgs px4_ros2_cpp
 ```
+Source the workspace
+```
+source install/setup.bash 
+```
 Build the workspace
 ```
 colcon build
