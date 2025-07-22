@@ -50,7 +50,10 @@ Then navigate into the workspace and initialize the submodules:
 cd ros2_px4_teleop_example/
 git submodule update --init --recursive
 ```
-
+Build the submodules
+```
+colcon build --packages-select px4_msgs px4_ros2_cpp
+```
 Build the workspace
 ```
 colcon build
