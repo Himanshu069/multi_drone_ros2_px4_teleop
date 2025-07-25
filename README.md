@@ -4,7 +4,7 @@ We previously had a popular [ros2_px4_offboard_example](https://github.com/ARK-E
 The original implementation was done with PX4 1.16
 
 ### Video Walkthrough
-TODO
+🎥 [Watch on YouTube](https://www.youtube.com/watch?v=skv9fBnTFDU)
 
 ### Prerequisites
 * Ubuntu 22.04
