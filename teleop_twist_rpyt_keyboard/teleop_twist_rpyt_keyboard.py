@@ -69,13 +69,21 @@ def main(args=None):
     rclpy.init()
     node = rclpy.create_node('teleop_twist_keyboard')
 
+
+    node.declare_parameter('namespace', '')  # default empty (no namespace)
+    ns = node.get_parameter('namespace').get_parameter_value().string_value
+
     qos = QoSProfile(
     reliability=QoSReliabilityPolicy.RELIABLE,
     history=QoSHistoryPolicy.KEEP_LAST,
     depth=10
     )
-    pub = node.create_publisher(Twist, 'cmd_vel', qos)
-    active_pub = node.create_publisher(Bool, '/teleop/active', qos)
+
+    if ns and not ns.startswith('/'):
+        ns = '/' + ns
+        
+    pub = node.create_publisher(Twist, f'{ns}/cmd_vel', qos)
+    active_pub = node.create_publisher(Bool, f'{ns}/teleop/active', qos)
     # Publish active=True at start
     active_msg = Bool()
     active_msg.data = True

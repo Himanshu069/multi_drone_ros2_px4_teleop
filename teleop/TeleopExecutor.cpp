@@ -70,8 +70,14 @@ void TeleopExecutor::switchToState(State state, px4_ros2::Result previous_result
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
+
+    std::string ns = "px4_1"; // or "px4_2" based on launch
     auto node_with_mode = std::make_shared<TeleopNodeWithExecutor>(kNodeName, kEnableDebugOutput);
+    
+    auto &teleop_mode = node_with_mode->getMode<Teleop>();
+
     rclcpp::spin(node_with_mode);
     rclcpp::shutdown();
     return 0;
 }
+                                                                                                                                                                                                                              

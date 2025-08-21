@@ -13,8 +13,15 @@ def generate_launch_description():
         Node(
             package='teleop',
             executable='teleop',
-            name='teleop',
+            name='teleop_px4_1',
             output='screen',
-            parameters=[config],
+            parameters=[config, {'ns':'px4_1'}],
+        ),
+        Node(
+            package='teleop',
+            executable='teleop',
+            name='teleop_px4_2',
+            output='screen',
+            parameters=[config, {'ns':'px4_2'}],
         )
     ])

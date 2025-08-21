@@ -5,26 +5,41 @@
 static const std::string kModeName = "Teleoperation";
 static const bool kEnableDebug = true;
 
-Teleop::Teleop(rclcpp::Node& node)
-    : px4_ros2::ModeBase(node, kModeName)
-    , _node(node)
+Teleop::Teleop(rclcpp::Node& node, const std::string &ns)
+    : px4_ros2::ModeBase(node, ns),
+    _node(node) 
+
 {
     _trajectory_setpoint = std::make_shared<px4_ros2::TrajectorySetpointType>(*this);
     _vehicle_attitude = std::make_shared<px4_ros2::OdometryAttitude>(*this);
     _clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
     loadParameters();
+
+    std::string twist_topic = ns.empty() ? "/cmd_vel" : "/" + ns + "/cmd_vel";
+    std::string active_topic = ns.empty() ? "/teleop/active" : "/" + ns + "/teleop/active";
+
     _twist_sub = _node.create_subscription<geometry_msgs::msg::Twist>(
-        "/cmd_vel", 10,
+        twist_topic, 10,
         [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
             _last_twist = *msg;
             _last_twist_time = _clock->now();
+            RCLCPP_INFO(_node.get_logger(),
+                    "Received Twist: linear=(%.2f, %.2f, %.2f), angular=(%.2f, %.2f, %.2f)",
+                    msg->linear.x, msg->linear.y, msg->linear.z,
+                    msg->angular.x, msg->angular.y, msg->angular.z);
         });
     _active_sub = _node.create_subscription<std_msgs::msg::Bool>(
-        "/teleop/active", 10,
+        active_topic, 10,
         [this](const std_msgs::msg::Bool::SharedPtr msg) {
           _teleop_active = msg->data;
           RCLCPP_INFO(_node.get_logger(), "Teleop active: %s", _teleop_active ? "true" : "false");
         });
+
+
+    RCLCPP_INFO(_node.get_logger(), "Teleop node constructed with ns='%s'", ns.c_str());
+    RCLCPP_INFO(_node.get_logger(), "Subscribing to twist topic: %s", twist_topic.c_str());
+    RCLCPP_INFO(_node.get_logger(), "Subscribing to active topic: %s", active_topic.c_str());
+    RCLCPP_INFO(_node.get_logger(), "Teleop duration: %.2f seconds", _teleop_duration.count());
 }
 void Teleop::loadParameters()
 {
