@@ -20,7 +20,7 @@
 
 class Teleop : public px4_ros2::ModeBase {
 public:
-    explicit Teleop(rclcpp::Node &node, const std::string &ns = "");
+    explicit Teleop(rclcpp::Node &node);
 
     // See ModeBase
     void onActivate() override;
@@ -29,7 +29,6 @@ public:
 
 private:
     void loadParameters();
-    std::string ns;
     // ROS 2
     rclcpp::Node &_node;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _twist_sub;

@@ -5,11 +5,14 @@
 static const std::string kModeName = "Teleoperation";
 static const bool kEnableDebug = true;
 
-Teleop::Teleop(rclcpp::Node& node, const std::string &ns)
-    : px4_ros2::ModeBase(node, ns),
+Teleop::Teleop(rclcpp::Node& node)
+    : px4_ros2::ModeBase(node, kModeName),
     _node(node) 
-
 {
+
+    _node.declare_parameter<std::string>("ns", "");
+    std::string ns = _node.get_parameter("ns").as_string();
+
     _trajectory_setpoint = std::make_shared<px4_ros2::TrajectorySetpointType>(*this);
     _vehicle_attitude = std::make_shared<px4_ros2::OdometryAttitude>(*this);
     _clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
